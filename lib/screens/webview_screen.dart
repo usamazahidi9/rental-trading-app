@@ -22,7 +22,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     _initializeWebView();
   }
 
-  void _initializeWebView() {
+  void _initializeWebView() async {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
@@ -48,18 +48,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
               });
               debugPrint(
                   'Main frame WebView error: ${error.errorCode} - ${error.description}');
-            } else {
-              debugPrint(
-                  'Ignored subresource error: ${error.errorCode} - ${error.description}');
             }
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            return NavigationDecision.navigate;
           },
         ),
       );
 
-    // Platform-specific settings for Android
+    // Android-specific settings
     if (_controller.platform is AndroidWebViewController) {
       AndroidWebViewController.enableDebugging(true);
       final androidController =
@@ -67,16 +61,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
       androidController.setMediaPlaybackRequiresUserGesture(false);
     }
 
-    // Load initial page
-    _controller.loadRequest(
-      Uri.parse(widget.url),
-      method: LoadRequestMethod.get,
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-      },
-    );
+    // 🔥 Clear cache before loading (prevents ERR_CACHE_MISS)
+    await _controller.clearCache();
+
+    // Load page normally
+    _controller.loadRequest(Uri.parse(widget.url));
   }
+
 
   @override
   Widget build(BuildContext context) {
